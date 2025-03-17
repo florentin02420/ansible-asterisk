@@ -1,0 +1,52 @@
+---
+- name: Installer la dernière version d'Asterisk
+  hosts: ipbx
+  become: yes
+  vars:
+    asterisk_version: "22-current"  # Version actuelle d'Asterisk
+    asterisk_src_dir: "/usr/local/src/asterisk"
+
+  tasks:
+    - name: Installer les dépendances
+      apt:
+        name:
+          - build-essential
+          - libssl-dev
+          - libncurses5-dev
+          - libnewt-dev
+          - libxml2-dev
+          - uuid-dev
+          - libsqlite3-dev
+          - wget
+          - git
+          - curl
+        state: present
+        update_cache: yes
+
+    - name: Télécharger les sources d'Asterisk
+      get_url:
+        url: "https://downloads.asterisk.org/pub/telephony/asterisk/asterisk-22-current.tar.gz"
+        dest: "/usr/local/src/asterisk-22-current.tar.gz"
+
+    - name: Extraire les sources
+      unarchive:
+        src: "/usr/local/src/asterisk-22-current.tar.gz"
+        dest: "/usr/local/src/"
+        remote_src: yes
+
+    - name: Compiler et installer Asterisk
+      shell: |
+        cd /usr/local/src/asterisk-22-current
+        ./configure
+        make
+        make install
+        make samples
+        make config
+      args:
+        executable: /bin/bash
+
+    - name: Activer et démarrer Asterisk
+      systemd:
+        name: asterisk
+        enabled: yes
+        state: started
